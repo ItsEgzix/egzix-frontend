@@ -24,10 +24,13 @@ export interface Transaction {
   date: string; // YYYY-MM-DD
   fromPlace: string | null;
   toPlace: string | null;
+  place: string | null;
   categoryId: string;
   category: TransactionCategory;
   createdAt: string;
 }
+
+export type NearbyKind = "food" | "shopping" | "transit" | "any";
 
 export interface PlaceSuggestion {
   name: string;
@@ -75,6 +78,7 @@ export interface CreateTransactionInput {
   categoryId: string;
   fromPlace?: string;
   toPlace?: string;
+  place?: string;
 }
 
 export interface CreateCategoryInput {

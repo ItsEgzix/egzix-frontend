@@ -17,6 +17,7 @@ export default function AddPage() {
   const [categoryId, setCategoryId] = useState("");
   const [fromPlace, setFromPlace] = useState("");
   const [toPlace, setToPlace] = useState("");
+  const [place, setPlace] = useState("");
   const [placesEnabled, setPlacesEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,15 +38,23 @@ export default function AddPage() {
       .catch(() => setPlacesEnabled(false));
   }, []);
 
-  const isTransport = useMemo(() => {
+  const parentName = useMemo(() => {
     for (const parent of categories) {
       const inParent =
         parent.id === categoryId ||
         (parent.children ?? []).some((c) => c.id === categoryId);
-      if (inParent) return parent.name.toLowerCase() === "transportation";
+      if (inParent) return parent.name.toLowerCase();
     }
-    return false;
+    return null;
   }, [categories, categoryId]);
+
+  const isTransport = parentName === "transportation";
+  const placeKind =
+    parentName === "meals"
+      ? ("food" as const)
+      : parentName === "shopping"
+        ? ("shopping" as const)
+        : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +85,7 @@ export default function AddPage() {
         categoryId,
         fromPlace: isTransport ? fromPlace.trim() || undefined : undefined,
         toPlace: isTransport ? toPlace.trim() || undefined : undefined,
+        place: placeKind ? place.trim() || undefined : undefined,
       });
       setSaved(
         `Saved ${formatMoney(created.amount)} — ${created.category.name}`,
@@ -84,6 +94,7 @@ export default function AddPage() {
       setDescription("");
       setFromPlace("");
       setToPlace("");
+      setPlace("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -143,6 +154,7 @@ export default function AddPage() {
                 value={fromPlace}
                 onChange={setFromPlace}
                 suggestionsEnabled={placesEnabled}
+                kind="transit"
                 placeholder="e.g. Home, KL Sentral"
               />
               <PlaceInput
@@ -150,9 +162,25 @@ export default function AddPage() {
                 value={toPlace}
                 onChange={setToPlace}
                 suggestionsEnabled={placesEnabled}
+                kind="transit"
                 placeholder="e.g. KLCC"
               />
             </div>
+          )}
+
+          {placeKind && (
+            <PlaceInput
+              label="Place"
+              value={place}
+              onChange={setPlace}
+              suggestionsEnabled={placesEnabled}
+              kind={placeKind}
+              placeholder={
+                placeKind === "food"
+                  ? "e.g. Nasi Kandar Pelita"
+                  : "e.g. Mid Valley Megamall"
+              }
+            />
           )}
 
           <div className="flex flex-col gap-2">

@@ -36,6 +36,9 @@ export default function TransactionItem({
             {transaction.fromPlace ?? "?"} → {transaction.toPlace ?? "?"}
           </p>
         )}
+        {transaction.place && (
+          <p className="truncate text-xs text-muted">📍 {transaction.place}</p>
+        )}
       </div>
       <span
         className={`shrink-0 text-sm font-semibold tabular-nums ${

@@ -1,9 +1,11 @@
+import type { GeoPoint } from "./geo";
 import type {
   Category,
   CreateCategoryInput,
   CreateTransactionInput,
   DailySummary,
   MonthlySummary,
+  NearbyKind,
   PlaceSuggestion,
   Transaction,
   TransactionType,
@@ -113,10 +115,28 @@ export function getPlacesStatus(): Promise<{ enabled: boolean }> {
   return request<{ enabled: boolean }>("/places/status");
 }
 
-export function getPlaceSuggestions(q: string): Promise<PlaceSuggestion[]> {
-  return request<PlaceSuggestion[]>(
-    `/places/autocomplete?q=${encodeURIComponent(q)}`,
-  );
+export function getPlaceSuggestions(
+  q: string,
+  coords?: GeoPoint | null,
+): Promise<PlaceSuggestion[]> {
+  const params = new URLSearchParams({ q });
+  if (coords) {
+    params.set("lat", String(coords.lat));
+    params.set("lng", String(coords.lng));
+  }
+  return request<PlaceSuggestion[]>(`/places/autocomplete?${params}`);
+}
+
+export function getNearbyPlaces(
+  coords: GeoPoint,
+  kind: NearbyKind,
+): Promise<PlaceSuggestion[]> {
+  const params = new URLSearchParams({
+    lat: String(coords.lat),
+    lng: String(coords.lng),
+    kind,
+  });
+  return request<PlaceSuggestion[]>(`/places/nearby?${params}`);
 }
 
 // --- Summaries ---
