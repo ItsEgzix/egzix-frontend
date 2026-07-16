@@ -4,6 +4,7 @@ import type {
   CreateTransactionInput,
   DailySummary,
   MonthlySummary,
+  PlaceSuggestion,
   Transaction,
   TransactionType,
 } from "./types";
@@ -104,6 +105,18 @@ export function deleteTransaction(id: string): Promise<{ deleted: boolean }> {
   return request<{ deleted: boolean }>(`/transactions/${id}`, {
     method: "DELETE",
   });
+}
+
+// --- Places ---
+
+export function getPlacesStatus(): Promise<{ enabled: boolean }> {
+  return request<{ enabled: boolean }>("/places/status");
+}
+
+export function getPlaceSuggestions(q: string): Promise<PlaceSuggestion[]> {
+  return request<PlaceSuggestion[]>(
+    `/places/autocomplete?q=${encodeURIComponent(q)}`,
+  );
 }
 
 // --- Summaries ---

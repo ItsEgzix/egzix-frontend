@@ -22,9 +22,16 @@ export interface Transaction {
   amount: number;
   description: string | null;
   date: string; // YYYY-MM-DD
+  fromPlace: string | null;
+  toPlace: string | null;
   categoryId: string;
   category: TransactionCategory;
   createdAt: string;
+}
+
+export interface PlaceSuggestion {
+  name: string;
+  address: string;
 }
 
 export interface SubcategoryTotal {
@@ -66,6 +73,8 @@ export interface CreateTransactionInput {
   date: string;
   description: string;
   categoryId: string;
+  fromPlace?: string;
+  toPlace?: string;
 }
 
 export interface CreateCategoryInput {

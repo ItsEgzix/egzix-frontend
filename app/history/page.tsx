@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
 import TransactionItem from "@/components/TransactionItem";
 import { deleteTransaction, getMonthlySummary, getTransactions } from "@/lib/api";
-import { currentMonthISO, formatDayLabel, formatMoney } from "@/lib/format";
+import {
+  currentMonthISO,
+  formatDayLabel,
+  formatMoney,
+  monthRange,
+} from "@/lib/format";
 import type { MonthlySummary, Transaction, TransactionType } from "@/lib/types";
 
 type TypeFilter = "ALL" | TransactionType;
@@ -134,17 +139,4 @@ export default function HistoryPage() {
       })}
     </div>
   );
-}
-
-function monthRange(month: string): { from: string; to: string } {
-  const start = new Date(`${month}-01T00:00:00`);
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 1);
-  end.setDate(0);
-  const to = [
-    end.getFullYear(),
-    String(end.getMonth() + 1).padStart(2, "0"),
-    String(end.getDate()).padStart(2, "0"),
-  ].join("-");
-  return { from: `${month}-01`, to };
 }

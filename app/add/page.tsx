@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
 import CategorySelect from "@/components/CategorySelect";
-import { createTransaction, getCategories } from "@/lib/api";
+import PlaceInput from "@/components/PlaceInput";
+import { createTransaction, getCategories, getPlacesStatus } from "@/lib/api";
 import { formatMoney, todayISO } from "@/lib/format";
 import type { Category, TransactionType } from "@/lib/types";
 
@@ -14,6 +15,9 @@ export default function AddPage() {
   const [date, setDate] = useState(todayISO());
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [fromPlace, setFromPlace] = useState("");
+  const [toPlace, setToPlace] = useState("");
+  const [placesEnabled, setPlacesEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -26,6 +30,22 @@ export default function AddPage() {
       );
     setCategoryId("");
   }, [type]);
+
+  useEffect(() => {
+    getPlacesStatus()
+      .then((s) => setPlacesEnabled(s.enabled))
+      .catch(() => setPlacesEnabled(false));
+  }, []);
+
+  const isTransport = useMemo(() => {
+    for (const parent of categories) {
+      const inParent =
+        parent.id === categoryId ||
+        (parent.children ?? []).some((c) => c.id === categoryId);
+      if (inParent) return parent.name.toLowerCase() === "transportation";
+    }
+    return false;
+  }, [categories, categoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +74,16 @@ export default function AddPage() {
         date,
         description: description.trim(),
         categoryId,
+        fromPlace: isTransport ? fromPlace.trim() || undefined : undefined,
+        toPlace: isTransport ? toPlace.trim() || undefined : undefined,
       });
       setSaved(
         `Saved ${formatMoney(created.amount)} — ${created.category.name}`,
       );
       setAmount("");
       setDescription("");
+      setFromPlace("");
+      setToPlace("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -111,6 +135,25 @@ export default function AddPage() {
             value={categoryId}
             onChange={setCategoryId}
           />
+
+          {isTransport && (
+            <div className="grid grid-cols-1 gap-4">
+              <PlaceInput
+                label="From"
+                value={fromPlace}
+                onChange={setFromPlace}
+                suggestionsEnabled={placesEnabled}
+                placeholder="e.g. Home, KL Sentral"
+              />
+              <PlaceInput
+                label="To"
+                value={toPlace}
+                onChange={setToPlace}
+                suggestionsEnabled={placesEnabled}
+                placeholder="e.g. KLCC"
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label htmlFor="date" className="text-xs font-medium text-ink-2">

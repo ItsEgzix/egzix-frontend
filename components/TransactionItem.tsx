@@ -1,30 +1,40 @@
 "use client";
 
-import { formatSignedMoney } from "@/lib/format";
+import { formatDayLabel, formatSignedMoney } from "@/lib/format";
 import type { Transaction } from "@/lib/types";
 
 interface TransactionItemProps {
   transaction: Transaction;
   onDelete?: (id: string) => void;
+  showDate?: boolean;
 }
 
 export default function TransactionItem({
   transaction,
   onDelete,
+  showDate = false,
 }: TransactionItemProps) {
   const { category } = transaction;
   const categoryLabel = category.parentName
     ? `${category.parentName} · ${category.name}`
     : category.name;
+  const meta = showDate
+    ? `${formatDayLabel(transaction.date)} · ${categoryLabel}`
+    : categoryLabel;
 
   return (
     <div className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink">
-          {transaction.description || categoryLabel}
+          {transaction.description || meta}
         </p>
         {transaction.description && (
-          <p className="truncate text-xs text-muted">{categoryLabel}</p>
+          <p className="truncate text-xs text-muted">{meta}</p>
+        )}
+        {(transaction.fromPlace || transaction.toPlace) && (
+          <p className="truncate text-xs text-muted">
+            {transaction.fromPlace ?? "?"} → {transaction.toPlace ?? "?"}
+          </p>
         )}
       </div>
       <span

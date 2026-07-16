@@ -43,6 +43,19 @@ export function formatDayLabel(date: string): string {
   });
 }
 
+export function monthRange(month: string): { from: string; to: string } {
+  const start = new Date(`${month}-01T00:00:00`);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 1);
+  end.setDate(0);
+  const to = [
+    end.getFullYear(),
+    String(end.getMonth() + 1).padStart(2, "0"),
+    String(end.getDate()).padStart(2, "0"),
+  ].join("-");
+  return { from: `${month}-01`, to };
+}
+
 export function formatMonthLabel(month: string): string {
   return new Date(`${month}-01T00:00:00`).toLocaleDateString("en-MY", {
     month: "long",
