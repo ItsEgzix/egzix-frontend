@@ -1,65 +1,129 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCallback, useEffect, useState } from "react";
+import Card from "@/components/Card";
+import CategoryBars from "@/components/CategoryBars";
+import TransactionItem from "@/components/TransactionItem";
+import { deleteTransaction, getDailySummary, getMonthlySummary } from "@/lib/api";
+import {
+  currentMonthISO,
+  formatMoney,
+  formatMonthLabel,
+  todayISO,
+} from "@/lib/format";
+import type { DailySummary, MonthlySummary } from "@/lib/types";
+
+export default function DashboardPage() {
+  const [daily, setDaily] = useState<DailySummary | null>(null);
+  const [monthly, setMonthly] = useState<MonthlySummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setError(null);
+      const [d, m] = await Promise.all([
+        getDailySummary(todayISO()),
+        getMonthlySummary(currentMonthISO()),
+      ]);
+      setDaily(d);
+      setMonthly(m);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load data");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleDelete = async (id: string) => {
+    await deleteTransaction(id);
+    void load();
+  };
+
+  if (error) {
+    return (
+      <p className="rounded-xl border border-line bg-surface p-4 text-sm text-bad">
+        {error} — is the backend running?
+      </p>
+    );
+  }
+
+  if (!daily || !monthly) {
+    return <p className="py-10 text-center text-sm text-muted">Loading…</p>;
+  }
+
+  const expenseCategories = monthly.byCategory.filter(
+    (c) => c.type === "EXPENSE",
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex flex-col gap-4">
+      <header>
+        <h1 className="text-lg font-semibold text-ink">My Budget</h1>
+        <p className="text-xs text-muted">{formatMonthLabel(monthly.month)}</p>
+      </header>
+
+      <Card>
+        <p className="text-xs text-ink-2">Spent today</p>
+        <p className="mt-1 text-4xl font-semibold tracking-tight text-ink">
+          {formatMoney(daily.expenseTotal)}
+        </p>
+        {daily.incomeTotal > 0 && (
+          <p className="mt-1 text-xs text-good">
+            +{formatMoney(daily.incomeTotal)} income today
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-3 gap-2">
+        <StatTile label="Income" value={formatMoney(monthly.incomeTotal)} tone="good" />
+        <StatTile label="Expenses" value={formatMoney(monthly.expenseTotal)} />
+        <StatTile
+          label="Balance"
+          value={formatMoney(monthly.net)}
+          tone={monthly.net < 0 ? "bad" : "good"}
+        />
+      </div>
+
+      <Card title="This month by category">
+        <CategoryBars categories={expenseCategories} />
+      </Card>
+
+      <Card title="Today">
+        {daily.transactions.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted">
+            Nothing recorded today
+          </p>
+        ) : (
+          <div className="divide-y divide-line">
+            {daily.transactions.map((t) => (
+              <TransactionItem key={t.id} transaction={t} onDelete={handleDelete} />
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "good" | "bad";
+}) {
+  const valueColor =
+    tone === "good" ? "text-good" : tone === "bad" ? "text-bad" : "text-ink";
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-3">
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${valueColor}`}>
+        {value}
+      </p>
     </div>
   );
 }
